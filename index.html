@@ -2,17 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/ico" href="/Examination.ico" /> <!-- Updated to use your image in assets -->
+    <link rel="icon" type="image/ico" href="/Examination.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Import Open Sans and Poppins fonts from Google Fonts (as used in your index.css) -->
+    <!-- Import Open Sans and Poppins fonts from Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <!-- Link to your styles -->
-    <link href="/src/index.css" rel="stylesheet" /> <!-- Updated to match your provided index.css file name -->
+    <!-- Vite will inject the CSS automatically, so this can be removed -->
+    <!-- <link href="/src/index.css" rel="stylesheet" /> -->
     
     <title>ExamMaster - Examination & Education Platform</title>
 
@@ -24,21 +24,22 @@
     <!-- Open Graph for social sharing -->
     <meta property="og:title" content="ExamMaster - Examination & Education Platform" />
     <meta property="og:description" content="Streamline your exam experience with ExamMaster, a web app by Khalipha Jibreel for creating, taking, and managing exams efficiently." />
-    <meta property="og:image" content="/Examination_Education.jpg" /> <!-- Using your image from assets -->
-    <meta property="og:url" content="https://exammaster.vercel.app" /> <!-- Your planned URL -->
+    <meta property="og:image" content="/Examination_Education.jpg" />
+    <meta property="og:url" content="https://exammaster.vercel.app" />
     <meta property="og:type" content="website" />
 
     <!-- Twitter Cards -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="ExamMaster - Examination & Education Platform" />
     <meta name="twitter:description" content="Streamline your exam experience with ExamMaster, a web app by Khalipha Jibreel for creating, taking, and managing exams efficiently." />
-    <meta name="twitter:image" content="/Examination_Education.jpg" /> <!-- Using your image from assets -->
+    <meta name="twitter:image" content="/Examination_Education.jpg" />
 
     <!-- Theme color for mobile browsers -->
-    <meta name="theme-color" content="#3b82f6" /> <!-- Matches your --accent color from index.css -->
+    <meta name="theme-color" content="#3b82f6" />
   </head>
   <body>
     <div id="root"></div>
+    <!-- Vite will inject the script tag automatically -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
