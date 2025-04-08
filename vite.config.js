@@ -9,4 +9,8 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
+  build: {
+    outDir: "dist", // Ensure output directory is 'dist'
+    assetsDir: "assets", // Where static assets are stored
+  },
 });
