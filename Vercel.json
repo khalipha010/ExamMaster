@@ -11,6 +11,10 @@
   ],
   "routes": [
     {
+      "src": "/test",
+      "dest": "/test.html"
+    },
+    {
       "src": "/assets/(.*)",
       "dest": "/assets/$1"
     },
