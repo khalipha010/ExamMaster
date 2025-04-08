@@ -225,14 +225,15 @@ const Login = () => {
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.6 }}
                 >
-                  <a
-                    href="/reset-password"
+                  <button
+                    type="button"
+                    onClick={() => navigate('/reset-password')}
                     className={`text-sm hover:underline ${
                       theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
                     }`}
                   >
                     Forgot password?
-                  </a>
+                  </button>
                 </motion.div>
               </div>
 
@@ -290,14 +291,15 @@ const Login = () => {
               }`}
             >
               Don't have an account?{' '}
-              <a
-                href="/register"
+              <button
+                type="button"
+                onClick={() => navigate('/register')}
                 className={`font-medium hover:underline ${
                   theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
                 }`}
               >
                 Create one
-              </a>
+              </button>
             </motion.div>
           </div>
         </motion.div>
