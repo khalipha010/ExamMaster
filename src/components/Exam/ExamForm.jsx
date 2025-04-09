@@ -21,6 +21,7 @@ const ExamForm = ({ examId, role }) => {
   const navigate = useNavigate();
   const { theme } = useContext(ThemeContext);
   const classes = Array.from({ length: 12 }, (_, i) => `Basic ${i + 1}`);
+  const optionLabels = ['A', 'B', 'C', 'D']; // For A, B, C, D labeling
 
   useEffect(() => {
     const fetchData = async () => {
@@ -321,24 +322,39 @@ const ExamForm = ({ examId, role }) => {
                       </label>
                       {question.options.map((option, oIndex) => (
                         <div key={oIndex} className="flex items-center gap-2">
-                          <div 
-                            className="flex-shrink-0 w-5 h-5 rounded-full border border-[var(--border)] flex items-center justify-center cursor-pointer"
-                            onClick={() => handleQuestionChange(qIndex, 'correctAnswer', option)}
-                          >
-                            {question.correctAnswer === option && (
-                              <FiCheck className="text-green-500 text-xs" />
-                            )}
-                          </div>
+                          <span className="flex-shrink-0 w-5 text-[var(--text-primary)]">
+                            {optionLabels[oIndex]}
+                          </span>
                           <input
                             type="text"
                             value={option}
                             onChange={(e) => handleOptionChange(qIndex, oIndex, e.target.value)}
-                            placeholder={`Option ${oIndex + 1}`}
+                            placeholder={`Option ${optionLabels[oIndex]}`}
                             className="flex-1 px-4 py-2 bg-[var(--secondary-bg)] border border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] text-[var(--text-primary)] placeholder-[var(--text-secondary)]"
                             required
                           />
                         </div>
                       ))}
+                    </div>
+
+                    {/* Correct Answer Selection */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
+                        Correct Answer
+                      </label>
+                      <select
+                        value={question.correctAnswer}
+                        onChange={(e) => handleQuestionChange(qIndex, 'correctAnswer', e.target.value)}
+                        className="w-full px-4 py-3 bg-[var(--primary-bg)] border border-[ (--border)] rounded-lg focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] text-[var(--text-primary)]"
+                        required
+                      >
+                        <option value="">Select Correct Answer</option>
+                        {question.options.map((option, oIndex) => (
+                          <option key={oIndex} value={option} disabled={!option}>
+                            {optionLabels[oIndex]}: {option || '(Empty)'}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </motion.div>
                 ))}
