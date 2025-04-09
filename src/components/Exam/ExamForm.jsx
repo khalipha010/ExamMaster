@@ -345,7 +345,7 @@ const ExamForm = ({ examId, role }) => {
                       <select
                         value={question.correctAnswer}
                         onChange={(e) => handleQuestionChange(qIndex, 'correctAnswer', e.target.value)}
-                        className="w-full px-4 py-3 bg-[var(--secondary-bg)] border border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] transition-all duration-200"
+                        className="w-full px-4 py-3 bg-[var(--primary-bg)] border border-[ (--border)] rounded-lg focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] text-[var(--text-primary)]"
                         required
                       >
                         <option value="">Select Correct Answer</option>
