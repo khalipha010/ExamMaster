@@ -1,12 +1,12 @@
 import { useState, useEffect, useContext } from 'react';
 import { auth, db } from '../../firebase/config';
-import { collection, query, where, getDocs, doc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiTrash2, FiEdit, FiX, FiUser, FiCheck, FiRefreshCw, FiSearch } from 'react-icons/fi';
+import { FiFlag, FiEdit, FiX, FiUser, FiCheck, FiRefreshCw, FiSearch } from 'react-icons/fi';
 import { ThemeContext } from '../../context/ThemeContext';
 import ThemeToggle from '../UI/ThemeToggle';
-import { FaSpinner } from 'react-icons/fa';
+import FlagModal from '../FlagModal'; // Import the new FlagModal component
 
 const ExamStudents = ({ role }) => {
   const [exams, setExams] = useState([]);
@@ -20,6 +20,8 @@ const ExamStudents = ({ role }) => {
   const [selectedClass, setSelectedClass] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [flaggingStudent, setFlaggingStudent] = useState(null);
+  const [flagReason, setFlagReason] = useState('');
   const { theme } = useContext(ThemeContext);
 
   // Check for mobile viewport
@@ -59,7 +61,10 @@ const ExamStudents = ({ role }) => {
           setExams(examList);
 
           // Fetch all students
-          const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
+          const studentsQuery = query(
+            collection(db, 'users'),
+            where('role', '==', 'student')
+          );
           const studentsSnapshot = await getDocs(studentsQuery);
           const allStudentsData = studentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setAllStudents(allStudentsData);
@@ -105,31 +110,39 @@ const ExamStudents = ({ role }) => {
     }
   };
 
-  const handleDeleteStudent = async (studentId) => {
-    if (window.confirm('Are you sure you want to delete this student? This action cannot be undone.')) {
-      try {
-        const studentRef = doc(db, 'users', studentId);
-        const studentDoc = await getDoc(studentRef);
-        if (!studentDoc.exists()) {
-          throw new Error('Student not found.');
-        }
+  const handleFlagStudent = (student) => {
+    setFlaggingStudent(student);
+    setFlagReason(''); // Reset the flag reason when opening the modal
+  };
 
-        await deleteDoc(studentRef);
-
-        // Delete all exam results associated with this student
-        const resultsQuery = query(collection(db, 'examResults'), where('studentId', '==', studentId));
-        const resultsSnapshot = await getDocs(resultsQuery);
-        const deletePromises = resultsSnapshot.docs.map(resultDoc => 
-          deleteDoc(doc(db, 'examResults', resultDoc.id))
-        );
-        await Promise.all(deletePromises);
-
-        setStudents(students.filter(student => student.id !== studentId));
-        setAllStudents(allStudents.filter(student => student.id !== studentId));
-      } catch (err) {
-        alert('Failed to delete student: ' + err.message);
-      }
+  const handleSubmitFlag = async () => {
+    if (!flagReason.trim()) {
+      alert('Please provide a reason for flagging this student.');
+      return;
     }
+
+    try {
+      const flagDocRef = doc(collection(db, 'flaggedStudents'));
+      await setDoc(flagDocRef, {
+        studentId: flaggingStudent.id,
+        teacherId: teacherId,
+        reason: flagReason,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      });
+
+      alert('Student has been flagged for review. An admin will review your request.');
+      setFlaggingStudent(null);
+      setFlagReason('');
+    } catch (err) {
+      console.error('Error flagging student:', err);
+      alert('Failed to flag student: ' + err.message);
+    }
+  };
+
+  const handleCancelFlag = () => {
+    setFlaggingStudent(null);
+    setFlagReason('');
   };
 
   const handleEditClass = (student) => {
@@ -402,13 +415,13 @@ const ExamStudents = ({ role }) => {
         
         <td className="px-4 py-4 whitespace-nowrap">
           <motion.button
-            onClick={() => handleDeleteStudent(student.id)}
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${theme === 'dark' ? 'bg-red-900/20 text-red-400 hover:bg-red-800/20' : 'bg-red-100 text-red-600 hover:bg-red-200'}`}
+            onClick={() => handleFlagStudent(student)}
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${theme === 'dark' ? 'bg-yellow-900/20 text-yellow-400 hover:bg-yellow-800/20' : 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'}`}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <FiTrash2 className="mr-1" size={12} />
-            {!isMobile && <span>Delete</span>}
+            <FiFlag className="mr-1" size={12} />
+            {!isMobile && <span>Flag for Review</span>}
           </motion.button>
         </td>
       </motion.tr>
@@ -627,6 +640,19 @@ const ExamStudents = ({ role }) => {
         </div>
       </div>
       <ThemeToggle />
+      <AnimatePresence>
+        {flaggingStudent && (
+          <FlagModal
+            key="flag-modal"
+            flaggingStudent={flaggingStudent}
+            flagReason={flagReason}
+            setFlagReason={setFlagReason}
+            handleSubmitFlag={handleSubmitFlag}
+            handleCancelFlag={handleCancelFlag}
+            theme={theme}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
