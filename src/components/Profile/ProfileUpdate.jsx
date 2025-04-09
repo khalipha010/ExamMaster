@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../../firebase/config';
 import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
-import { deleteUser, onAuthStateChanged } from 'firebase/auth';
+import { deleteUser, onAuthStateChanged, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { uploadImageToCloudinary } from '../../utils/cloudinary';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeContext } from '../../context/ThemeContext';
@@ -24,6 +24,8 @@ const ProfileUpdate = ({ role }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showReauthModal, setShowReauthModal] = useState(false);
+  const [reauthPassword, setReauthPassword] = useState('');
   const navigate = useNavigate();
   const { theme } = useContext(ThemeContext);
   const classes = Array.from({ length: 12 }, (_, i) => `Basic ${i + 1}`);
@@ -94,19 +96,44 @@ const ProfileUpdate = ({ role }) => {
     }
   };
 
+  const handleReauthenticate = async () => {
+    try {
+      const user = auth.currentUser;
+      const credential = EmailAuthProvider.credential(user.email, reauthPassword);
+      await reauthenticateWithCredential(user, credential);
+      setShowReauthModal(false);
+      setReauthPassword('');
+      // Proceed with account deletion after successful re-authentication
+      await deleteAccount();
+    } catch (err) {
+      console.error('Re-authentication failed:', err);
+      setError('Failed to re-authenticate. Please check your password and try again.');
+    }
+  };
+
+  const deleteAccount = async () => {
+    setLoading(true);
+    try {
+      // Delete Firestore data
+      await deleteDoc(doc(db, 'users', auth.currentUser.uid));
+      // Delete Firebase Authentication record
+      await deleteUser(auth.currentUser);
+      navigate('/login');
+    } catch (err) {
+      if (err.code === 'auth/requires-recent-login') {
+        setShowReauthModal(true);
+      } else {
+        console.error('Error deleting account:', err);
+        setError('Failed to delete account: ' + err.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDeleteAccount = async () => {
     if (window.confirm('Are you sure you want to permanently delete your account? This action cannot be undone.')) {
-      setLoading(true);
-      try {
-        await deleteDoc(doc(db, 'users', auth.currentUser.uid));
-        await deleteUser(auth.currentUser);
-        navigate('/login');
-      } catch (err) {
-        console.error('Error deleting account:', err);
-        setError('Failed to delete account. Please try again.');
-      } finally {
-        setLoading(false);
-      }
+      await deleteAccount();
     }
   };
 
@@ -294,6 +321,50 @@ const ProfileUpdate = ({ role }) => {
           </div>
         </motion.div>
       </div>
+
+      {/* Re-authentication Modal */}
+      {showReauthModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className={`p-6 rounded-lg shadow-lg max-w-sm w-full ${theme === 'dark' ? 'bg-gray-800 text-gray-200' : 'bg-white text-gray-800'}`}
+          >
+            <h3 className="text-lg font-bold mb-4">Re-authentication Required</h3>
+            <p className="mb-4">For security reasons, please enter your password to confirm your identity before deleting your account.</p>
+            <input
+              type="password"
+              value={reauthPassword}
+              onChange={(e) => setReauthPassword(e.target.value)}
+              placeholder="Enter your password"
+              className={`w-full p-3 rounded-lg mb-4 ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-200' : 'bg-gray-100 border-gray-300 text-gray-800'}`}
+            />
+            {error && (
+              <p className={`text-sm mb-4 ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>{error}</p>
+            )}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowReauthModal(false);
+                  setReauthPassword('');
+                  setError('');
+                }}
+                className={`px-4 py-2 rounded-lg ${theme === 'dark' ? 'bg-gray-600 hover:bg-gray-500' : 'bg-gray-300 hover:bg-gray-400'} text-white`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReauthenticate}
+                className={`px-4 py-2 rounded-lg ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white`}
+              >
+                Confirm
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       <ThemeToggle />
     </div>
   );

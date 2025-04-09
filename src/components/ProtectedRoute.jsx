@@ -8,16 +8,24 @@ import { ThemeContext } from '../context/ThemeContext';
 
 const ProtectedRoute = ({ children, allowedRole }) => {
   const [userRole, setUserRole] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const { theme } = useContext(ThemeContext);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        setIsAuthenticated(true);
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           setUserRole(userDoc.data().role);
+        } else {
+          console.error('User document not found in Firestore');
+          setUserRole(null);
         }
+      } else {
+        setIsAuthenticated(false);
+        setUserRole(null);
       }
       setLoading(false);
     });
@@ -33,12 +41,16 @@ const ProtectedRoute = ({ children, allowedRole }) => {
     );
   }
 
-  if (!auth.currentUser) {
-    return <Navigate to="/" />; // Unauthenticated → /login
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />; // Unauthenticated → /login
+  }
+
+  if (userRole === null) {
+    return <Navigate to="/login" />; // User document not found → /login
   }
 
   if (userRole !== allowedRole) {
-    return <Navigate to="/" />; // Role mismatch → / (home)
+    return <Navigate to={userRole === 'teacher' ? '/teacher-dashboard' : '/student-dashboard'} />;
   }
 
   return children;

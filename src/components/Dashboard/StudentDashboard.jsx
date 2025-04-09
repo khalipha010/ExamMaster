@@ -1,6 +1,6 @@
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { useState, useEffect, useContext } from 'react'; // Import React hooks from 'react'
+import { Routes, Route, useLocation, useParams } from 'react-router-dom'; // Import routing hooks from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion';
-import { useParams, useContext, useState, useEffect } from 'react';
 import { ThemeContext } from '../../context/ThemeContext';
 import Sidebar from './Sidebar';
 import ProfileUpdate from '../Profile/ProfileUpdate';
@@ -14,6 +14,47 @@ import { auth, db } from '../../firebase/config';
 import { collection, getDocs, query, doc, getDoc, where } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 
+// Animation variants
+const pageVariants = {
+  initial: {
+    opacity: 0,
+    y: 20,
+    transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
+  },
+  in: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+  },
+  out: {
+    opacity: 0,
+    y: -20,
+    transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+// TakeExamWrapper as a standalone component
+const TakeExamWrapper = () => {
+  const { examId } = useParams();
+  return (
+    <motion.div
+      initial="initial"
+      animate="in"
+      exit="out"
+      variants={pageVariants}
+      className="p-4 lg:p-8"
+    >
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] flex items-center gap-3">
+          <FiBook className="text-[var(--accent)]" />
+          Take Exam
+        </h1>
+      </div>
+      <TakeExam examId={examId} role="student" />
+    </motion.div>
+  );
+};
+
 const StudentDashboard = () => {
   const { theme } = useContext(ThemeContext);
   const location = useLocation();
@@ -21,12 +62,15 @@ const StudentDashboard = () => {
   const [viewedAnnouncements, setViewedAnnouncements] = useState(new Set());
   const [dismissedAnnouncements, setDismissedAnnouncements] = useState(new Set());
 
-  // Fetch newCount for the badge
   useEffect(() => {
+    console.log('Firebase db in StudentDashboard:', db);
+    if (!db) {
+      console.error('Firestore db is not initialized');
+      return;
+    }
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
-          // Fetch announcements
           const allAnnouncementsQuery = query(
             collection(db, 'announcements'),
             where('target', '==', 'all')
@@ -49,7 +93,6 @@ const StudentDashboard = () => {
             }))
             .filter((ann, index, self) => index === self.findIndex((a) => a.id === ann.id));
 
-          // Fetch viewed and dismissed announcements
           const userRef = doc(db, 'users', user.uid);
           const userDoc = await getDoc(userRef);
           const userData = userDoc.data();
@@ -59,7 +102,6 @@ const StudentDashboard = () => {
             setViewedAnnouncements(viewed);
             setDismissedAnnouncements(dismissed);
 
-            // Calculate newCount
             const count = announcementList.filter(
               (ann) => !viewed.has(ann.id) && !dismissed.has(ann.id)
             ).length;
@@ -74,60 +116,15 @@ const StudentDashboard = () => {
     return () => unsubscribe();
   }, []);
 
-  // Animation variants
-  const pageVariants = {
-    initial: {
-      opacity: 0,
-      y: 20,
-      transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
-    },
-    in: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
-    },
-    out: {
-      opacity: 0,
-      y: -20,
-      transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
-    },
-  };
-
-  const TakeExamWrapper = () => {
-    const { examId } = useParams();
-    return (
-      <motion.div
-        initial="initial"
-        animate="in"
-        exit="out"
-        variants={pageVariants}
-        className="p-4 lg:p-8"
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-4">
-          <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] flex items-center gap-3">
-            <FiBook className="text-[var(--accent)]" />
-            Take Exam
-          </h1>
-        </div>
-        <TakeExam examId={examId} role="student" />
-      </motion.div>
-    );
-  };
-
   return (
     <div className={`flex min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      {/* Sidebar */}
       <Sidebar role="student" />
-
-      {/* Main content area */}
       <div className="flex-1 p-4 md:p-6 lg:p-8 ml-0 md:ml-64 transition-all duration-300 w-full">
-        {/* Mobile header */}
         <div className="md:hidden flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold text-[var(--text-primary)]">
             Student Portal
           </h1>
         </div>
-
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route
